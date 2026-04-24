@@ -1,0 +1,42 @@
+{
+  "keywords": [
+    "L&D consultant remote",
+    "learning development consultant",
+    "instructional designer senior remote",
+    "ESG consultant",
+    "sustainability consultant remote",
+    "international development consultant",
+    "capacity building consultant",
+    "corporate training consultant remote",
+    "organizational learning consultant",
+    "ESG strategy advisor"
+  ],
+  "exclude_keywords": [
+    "ETL developer",
+    "software engineer",
+    "SQL developer",
+    "manual testing",
+    "QA engineer",
+    "data engineer",
+    "DevOps",
+    "requires sponsorship",
+    "US citizens only",
+    "security clearance required"
+  ],
+  "preferred_locations": [
+    "remote",
+    "paris",
+    "geneva",
+    "dubai",
+    "bangkok",
+    "hong kong",
+    "singapore"
+  ],
+  "min_score": 6,
+  "daily_limit": 20,
+  "candidate": {
+    "name": "Xue Ke",
+    "background": "Management PhD (ESG-integrated asset pricing, 2021). Field experience at UN ESCAP Bangkok (Economic and Social Survey of Asia-Pacific) and UNOG Geneva SDG Lab (Building Bridges Week, SDG-aligned investment dialogue). 3+ years designing and delivering executive education to 300+ senior professionals (avg age 40+) across 10+ industries — including building a Business Intelligence curriculum from zero. Trilingual: English (PhD thesis), French (10+ years residence), Chinese (native). Working knowledge of Spanish and Arabic. Holder of French long-stay residence permit — no EU visa sponsorship required. Seeking L&D consultant, international development consultant, or ESG advisory roles. Strongly prefers roles emphasising strategy, communication, and facilitation over technical coding.",
+    "avoid": "pure coding, ETL pipelines, software development, roles requiring 10+ years large corporate management experience"
+  }
+}
