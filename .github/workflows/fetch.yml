@@ -1,0 +1,42 @@
+name: Daily Job Hunt
+
+on:
+  schedule:
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+jobs:
+  hunt:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Step 1 — Fetch & Score
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: node scripts/fetch.js
+
+      - name: Step 2 — Generate Cover Letters
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+        run: node scripts/generate.js
+
+      - name: Commit data files
+        run: |
+          git config user.name  "hunt-bot"
+          git config user.email "hunt-bot@users.noreply.github.com"
+          git add data/
+          git diff --cached --quiet || git commit -m "chore: daily update $(date -u +%Y-%m-%d)"
+          git push
