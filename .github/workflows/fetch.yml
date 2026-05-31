@@ -22,21 +22,36 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Step 1 — Fetch & Score
+      - name: Fetch and score jobs
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: node scripts/fetch.js
 
-      - name: Step 2 — Generate Cover Letters
+      - name: Generate cover letters
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GMAIL_USER: ${{ secrets.GMAIL_USER }}
         run: node scripts/generate.js
 
-      - name: Commit data files
+      - name: Queue eligible email jobs
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GMAIL_CLIENT_ID: ${{ secrets.GMAIL_CLIENT_ID }}
+          GMAIL_CLIENT_SECRET: ${{ secrets.GMAIL_CLIENT_SECRET }}
+          GMAIL_REFRESH_TOKEN: ${{ secrets.GMAIL_REFRESH_TOKEN }}
+          VERCEL_URL: ${{ secrets.VERCEL_URL }}
+        run: node scripts/queue.js
+
+      - name: Send queued emails
+        env:
+          GMAIL_CLIENT_ID: ${{ secrets.GMAIL_CLIENT_ID }}
+          GMAIL_CLIENT_SECRET: ${{ secrets.GMAIL_CLIENT_SECRET }}
+          GMAIL_REFRESH_TOKEN: ${{ secrets.GMAIL_REFRESH_TOKEN }}
+        run: node scripts/send.js
+
+      - name: Commit updated data
         run: |
-          git config user.name  "hunt-bot"
-          git config user.email "hunt-bot@users.noreply.github.com"
+          git config user.name "hunt-jobs-bot"
+          git config user.email "bot@hunt-jobs"
           git add data/
-          git diff --cached --quiet || git commit -m "chore: daily update $(date -u +%Y-%m-%d)"
+          git diff --staged --quiet || git commit -m "Daily update $(date -u +%Y-%m-%d)"
           git push
