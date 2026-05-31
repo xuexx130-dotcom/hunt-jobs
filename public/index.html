@@ -52,23 +52,19 @@ body { font-family: -apple-system, sans-serif; background: #0f172a; color: #e2e8
     <div class="stat"><div class="stat-num" id="statPlatform">—</div><div class="stat-label">Manual Apply</div></div>
     <div class="stat"><div class="stat-num" id="statSent">—</div><div class="stat-label">Sent Total</div></div>
   </div>
-
   <div class="section">
     <div class="section-title queue">🔴 Auto-Send Queue (cancel within 24h)</div>
     <div id="queueSection"><div class="empty">Loading...</div></div>
   </div>
-
   <div class="section">
     <div class="section-title platform">🟡 Manual Apply (platform jobs)</div>
     <div id="platformSection"><div class="empty">Loading...</div></div>
   </div>
-
   <div class="section">
     <div class="section-title sent">🟢 Sent History</div>
     <div id="sentSection"><div class="empty">Loading...</div></div>
   </div>
 </div>
-
 <script>
 document.getElementById('dateDisplay').textContent = new Date().toLocaleDateString('en-GB', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
 
@@ -84,20 +80,15 @@ function countdown(sendAfter) {
 
 async function loadData() {
   try {
-    async function fetchGithubFile(path) {
-  const res = await fetch(`https://api.github.com/repos/xuexx130-dotcom/hunt-jobs/contents/${path}`, {
-    headers: { 'Accept': 'application/vnd.github.v3.raw' }
-  });
-  return res.json();
-}
+    const [jobsRes, queueRes, logRes] = await Promise.all([
+      fetch('https://raw.githubusercontent.com/xuexx130-dotcom/hunt-jobs/main/data/jobs_today.json'),
+      fetch('https://raw.githubusercontent.com/xuexx130-dotcom/hunt-jobs/main/data/send_queue.json'),
+      fetch('https://raw.githubusercontent.com/xuexx130-dotcom/hunt-jobs/main/data/job_log.json')
+    ]);
 
-const [jobs, queue, log] = await Promise.all([
-  fetchGithubFile('data/jobs_today.json'),
-  fetchGithubFile('data/send_queue.json'),
-  fetchGithubFile('data/job_log.json')
-]);
-
-   
+    const jobs = await jobsRes.json();
+    const queue = await queueRes.json();
+    const log = await logRes.json();
 
     const queuedIds = new Set(queue.filter(q => !q.cancelled && !q.sent).map(q => q.jobId));
     const platformJobs = jobs.filter(j => !j.applyViaEmail || !queuedIds.has(j.title + j.org));
@@ -107,6 +98,66 @@ const [jobs, queue, log] = await Promise.all([
     document.getElementById('statPlatform').textContent = platformJobs.length;
     document.getElementById('statSent').textContent = log.filter(l => l.status === 'sent').length;
 
-    // Queue section
     const queueEl = document.getElementById('queueSection');
-    if (!activeQueue
+    if (!activeQueue.length) {
+      queueEl.innerHTML = '<div class="empty">No emails queued today</div>';
+    } else {
+      queueEl.innerHTML = activeQueue.map(q => `
+        <div class="job-card">
+          <div class="job-top">
+            <div><div class="job-title">${q.job.title}</div><div class="job-org">${q.job.org}</div></div>
+            <span class="score-badge ${scoreClass(q.job.score)}">${q.job.score}</span>
+          </div>
+          <div class="reason">${q.job.reason || ''}</div>
+          <div class="job-meta">
+            <span class="tag email">📧 ${q.job.emailAddress}</span>
+            <span class="countdown">${countdown(q.sendAfter)}</span>
+            <a href="?cancel=${q.queueId}" class="btn btn-cancel" onclick="return confirm('Cancel this application?')">✕ Cancel</a>
+          </div>
+        </div>`).join('');
+    }
+
+    const platformEl = document.getElementById('platformSection');
+    if (!platformJobs.length) {
+      platformEl.innerHTML = '<div class="empty">No platform jobs today</div>';
+    } else {
+      platformEl.innerHTML = platformJobs.map(j => `
+        <div class="job-card">
+          <div class="job-top">
+            <div><div class="job-title">${j.title}</div><div class="job-org">${j.org}</div></div>
+            <span class="score-badge ${scoreClass(j.score)}">${j.score}</span>
+          </div>
+          <div class="reason">${j.reason || ''}</div>
+          <div class="job-meta">
+            <span class="tag">${j.source}</span>
+            ${j.url ? `<a href="${j.url}" target="_blank" class="btn btn-apply">Apply →</a>` : ''}
+          </div>
+        </div>`).join('');
+    }
+
+    const sentEl = document.getElementById('sentSection');
+    const sentJobs = log.filter(l => l.status === 'sent').reverse().slice(0, 10);
+    if (!sentJobs.length) {
+      sentEl.innerHTML = '<div class="empty">No emails sent yet</div>';
+    } else {
+      sentEl.innerHTML = sentJobs.map(l => `
+        <div class="job-card">
+          <div class="job-top">
+            <div><div class="job-title">${l.title}</div><div class="job-org">${l.org}</div></div>
+            <span class="score-badge ${scoreClass(l.score)}">${l.score}</span>
+          </div>
+          <div class="reason">Sent to ${l.emailAddress} · ${new Date(l.sentAt).toLocaleDateString()}</div>
+        </div>`).join('');
+    }
+
+  } catch(e) {
+    console.error(e);
+    document.getElementById('queueSection').innerHTML = '<div class="empty">Error loading data: ' + e.message + '</div>';
+  }
+}
+
+loadData();
+setInterval(loadData, 60000);
+</script>
+</body>
+</html>
