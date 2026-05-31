@@ -1,0 +1,26 @@
+{
+  "keywords": [
+    "L&D consultant",
+    "learning development",
+    "training consultant",
+    "capacity building",
+    "ESG consultant",
+    "sustainability consultant",
+    "international development consultant"
+  ],
+  "sources": {
+    "un_talent": true,
+    "undp": true,
+    "upwork": true,
+    "oecd": true
+  },
+  "scoring": {
+    "auto_send_threshold": 85,
+    "dashboard_threshold": 70,
+    "daily_send_limit": 5
+  },
+  "sender": {
+    "name": "Xue Ke",
+    "email": "xuexx130@gmail.com"
+  }
+}
