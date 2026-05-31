@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hunt Jobs Dashboard</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+.header { background: #1e293b; padding: 20px 30px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+.header h1 { font-size: 1.4rem; color: #f8fafc; }
+.header .date { color: #94a3b8; font-size: 0.9rem; }
+.container { max-width: 1000px; margin: 0 auto; padding: 30px 20px; }
+.section { margin-bottom: 40px; }
+.section-title { font-size: 1rem; font-weight: 600; margin-bottom: 15px; padding: 8px 12px; border-radius: 6px; display: flex; align-items: center; gap: 8px; }
+.section-title.queue { background: #7f1d1d; color: #fca5a5; }
+.section-title.platform { background: #1c1917; color: #fbbf24; }
+.section-title.sent { background: #14532d; color: #86efac; }
+.job-card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 20px; margin-bottom: 12px; }
+.job-card:hover { border-color: #475569; }
+.job-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.job-title { font-weight: 600; font-size: 1rem; color: #f1f5f9; }
+.job-org { color: #94a3b8; font-size: 0.85rem; margin-top: 3px; }
+.score-badge { background: #0f172a; border: 1px solid #475569; border-radius: 20px; padding: 4px 12px; font-size: 0.85rem; font-weight: 700; white-space: nowrap; }
+.score-high { color: #4ade80; border-color: #4ade80; }
+.score-mid { color: #fbbf24; border-color: #fbbf24; }
+.reason { font-size: 0.85rem; color: #94a3b8; margin-bottom: 12px; line-height: 1.5; }
+.job-meta { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.tag { font-size: 0.75rem; padding: 3px 10px; border-radius: 20px; background: #0f172a; color: #94a3b8; border: 1px solid #334155; }
+.tag.email { color: #60a5fa; border-color: #60a5fa; }
+.btn { padding: 6px 16px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: none; text-decoration: none; display: inline-block; }
+.btn-apply { background: #3b82f6; color: white; }
+.btn-apply:hover { background: #2563eb; }
+.btn-cancel { background: #dc2626; color: white; }
+.btn-cancel:hover { background: #b91c1c; }
+.countdown { font-size: 0.78rem; color: #f87171; font-weight: 600; }
+.empty { text-align: center; color: #475569; padding: 40px; font-size: 0.9rem; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px; }
+.stat { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 15px 20px; text-align: center; }
+.stat-num { font-size: 2rem; font-weight: 700; color: #f1f5f9; }
+.stat-label { font-size: 0.8rem; color: #64748b; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>🎯 Hunt Jobs</h1>
+  <div class="date" id="dateDisplay"></div>
+</div>
+<div class="container">
+  <div class="stats">
+    <div class="stat"><div class="stat-num" id="statQueue">—</div><div class="stat-label">Queued to Send</div></div>
+    <div class="stat"><div class="stat-num" id="statPlatform">—</div><div class="stat-label">Manual Apply</div></div>
+    <div class="stat"><div class="stat-num" id="statSent">—</div><div class="stat-label">Sent Total</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title queue">🔴 Auto-Send Queue (cancel within 24h)</div>
+    <div id="queueSection"><div class="empty">Loading...</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title platform">🟡 Manual Apply (platform jobs)</div>
+    <div id="platformSection"><div class="empty">Loading...</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title sent">🟢 Sent History</div>
+    <div id="sentSection"><div class="empty">Loading...</div></div>
+  </div>
+</div>
+
+<script>
+document.getElementById('dateDisplay').textContent = new Date().toLocaleDateString('en-GB', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+function scoreClass(s) { return s >= 85 ? 'score-high' : 'score-mid'; }
+
+function countdown(sendAfter) {
+  const diff = new Date(sendAfter) - new Date();
+  if (diff <= 0) return 'Sending soon...';
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  return `⏱ ${h}h ${m}m remaining`;
+}
+
+async function loadData() {
+  try {
+    const [jobsRes, queueRes, logRes] = await Promise.all([
+      fetch('https://raw.githubusercontent.com/xuexx130-dotcom/hunt-jobs/main/data/jobs_today.json'),
+      fetch('https://raw.githubusercontent.com/xuexx130-dotcom/hunt-jobs/main/data/send_queue.json'),
+      fetch('https://raw.githubusercontent.com/xuexx130-dotcom/hunt-jobs/main/data/job_log.json')
+    ]);
+
+    const jobs = await jobsRes.json();
+    const queue = await queueRes.json();
+    const log = await logRes.json();
+
+    const queuedIds = new Set(queue.filter(q => !q.cancelled && !q.sent).map(q => q.jobId));
+    const platformJobs = jobs.filter(j => !j.applyViaEmail || !queuedIds.has(j.title + j.org));
+    const activeQueue = queue.filter(q => !q.cancelled && !q.sent);
+
+    document.getElementById('statQueue').textContent = activeQueue.length;
+    document.getElementById('statPlatform').textContent = platformJobs.length;
+    document.getElementById('statSent').textContent = log.filter(l => l.status === 'sent').length;
+
+    // Queue section
+    const queueEl = document.getElementById('queueSection');
+    if (!activeQueue
