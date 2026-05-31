@@ -97,9 +97,7 @@ const [jobs, queue, log] = await Promise.all([
   fetchGithubFile('data/job_log.json')
 ]);
 
-    const jobs = await jobsRes.json();
-    const queue = await queueRes.json();
-    const log = await logRes.json();
+   
 
     const queuedIds = new Set(queue.filter(q => !q.cancelled && !q.sent).map(q => q.jobId));
     const platformJobs = jobs.filter(j => !j.applyViaEmail || !queuedIds.has(j.title + j.org));
