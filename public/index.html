@@ -84,11 +84,18 @@ function countdown(sendAfter) {
 
 async function loadData() {
   try {
-    const [jobsRes, queueRes, logRes] = await Promise.all([
-      fetch('https://raw.githubusercontent.com/xuexx130-dotcom/hunt-jobs/main/data/jobs_today.json'),
-      fetch('https://raw.githubusercontent.com/xuexx130-dotcom/hunt-jobs/main/data/send_queue.json'),
-      fetch('https://raw.githubusercontent.com/xuexx130-dotcom/hunt-jobs/main/data/job_log.json')
-    ]);
+    async function fetchGithubFile(path) {
+  const res = await fetch(`https://api.github.com/repos/xuexx130-dotcom/hunt-jobs/contents/${path}`, {
+    headers: { 'Accept': 'application/vnd.github.v3.raw' }
+  });
+  return res.json();
+}
+
+const [jobs, queue, log] = await Promise.all([
+  fetchGithubFile('data/jobs_today.json'),
+  fetchGithubFile('data/send_queue.json'),
+  fetchGithubFile('data/job_log.json')
+]);
 
     const jobs = await jobsRes.json();
     const queue = await queueRes.json();
